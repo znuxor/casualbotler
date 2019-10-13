@@ -40,6 +40,7 @@ SEARCH_CMD_PARSER.add_argument('terms',
                                nargs='+',
                                help='the nick or piece of mask to search')
 SEARCH_CMD_PARSER.add_argument('-c', '--convert', action='store_true')
+SEARCH_CMD_PARSER.add_argument('-e', '--extended', action='store_true')
 
 LOGENTRY = None
 LINE_REPORT_FORMAT = None
@@ -67,15 +68,17 @@ def setup(bot):
 ACCEPTABLE_RATIO = 75
 
 
-def search_for_indexes(bot, search_term):
+def search_for_indexes(bot, search_term, extended_search=False):
     '''Searches the data in the sheets, returns the indexes.'''
     found_indexes = []
 
     for sheet in bot.config.logtools.relevant_sheets:
         index_list = []
         for index, line in enumerate(bot.memory[sheet]):
-            if line and (search_term in line[8] or fuzz.ratio(search_term.lower(),
-                                                              line[1].lower()) >= ACCEPTABLE_RATIO):
+            extended_search_match = extended_search and (search_term.lower() in line[7].lower() or search_term.lower() in line[10].lower())
+            if line and (search_term in line[8] or
+                         fuzz.ratio(search_term.lower(), line[1].lower()) >= ACCEPTABLE_RATIO or
+                         extended_search_match):
                 index_list.append(index)
         found_indexes.append(index_list)
 
@@ -138,6 +141,11 @@ def search(bot, trigger):
     else:
         search_terms = args.terms
 
+    if args.extended:
+        extended_search = True
+    else:
+        extended_search = False
+
     if bot.config.logtools.relevant_sheets[0] not in bot.memory:
         refresh_spreadsheet_content(bot)
 
@@ -148,7 +156,7 @@ def search(bot, trigger):
     for a_term in search_terms:
         if a_term is None:
             continue
-        term_indexes_by_sheet = search_for_indexes(bot, a_term)
+        term_indexes_by_sheet = search_for_indexes(bot, a_term, extended_search)
         for index, content in enumerate(term_indexes_by_sheet):
             indexes_by_sheet[index].extend(content)
 
@@ -201,7 +209,7 @@ def format_spreadsheet_line(entry, sheet_name):
 RELEVANT_RANGE = 'a2:l'
 
 
-@module.interval(60)
+@module.interval(120)
 def refresh_spreadsheet_content(bot):
     '''Periodically refreshes the spreadsheet content.
     This is done this way to limits calls to the API.'''
