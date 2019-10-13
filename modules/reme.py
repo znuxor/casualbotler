@@ -160,9 +160,9 @@ def listsortedids(bot, trigger):
         for user_nick in bot.privileges[a_channel]:
             user_obj = bot.users[user_nick]
             user_user = user_obj.user
-            if user_user[0:3] == 'uid':
+            if user_user is not None and user_user[0:3] == 'uid':
                 uid_set.add(user_user)
-            elif user_user[0:3] == 'sid':
+            elif user_user is not None and user_user[0:3] == 'sid':
                 sid_set.add(user_user)
     uid_list = list(int(i[3:]) for i in uid_set)
     uid_list.sort()
