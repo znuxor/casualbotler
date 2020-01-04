@@ -68,11 +68,6 @@ def setup(bot):
     argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     global LOG_CMD_PARSER
     LOG_CMD_PARSER = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    LOG_CMD_PARSER.add_argument('mode',
-                                type=str,
-                                choices=['recent', 'auto'],
-                                default='auto',
-                                help='the desired logging mode')
     LOG_CMD_PARSER.add_argument('--linenumber',
                                 '-l',
                                 type=int,
@@ -80,34 +75,6 @@ def setup(bot):
                                 default=100,
                                 metavar="[1-4000]",
                                 help='the number of lines to log in recent mode')
-    LOG_CMD_PARSER.add_argument('--maxautolines',
-                                '-m',
-                                type=int,
-                                choices=range(1, 4001),
-                                default=4000,
-                                metavar="[1-4000]",
-                                help='the maximum number of lines to search in auto mode')
-    LOG_CMD_PARSER.add_argument('--maxlogautolines',
-                                '-b',
-                                type=int,
-                                choices=range(1, 4001),
-                                default=400,
-                                metavar="[1-4000]",
-                                help='the maximum number of lines for the log in auto mode')
-    LOG_CMD_PARSER.add_argument('--followinglines',
-                                '-f',
-                                type=int,
-                                choices=range(0, 101),
-                                default=2,
-                                metavar="[0-100]",
-                                help='the desired number of lines after the action in auto mode')
-    LOG_CMD_PARSER.add_argument('--skip',
-                                '-s',
-                                type=int,
-                                choices=range(11),
-                                default=0,
-                                metavar="[0-10]",
-                                help='the number of actions to skip in auto mode')
     LOG_CMD_PARSER.add_argument('--chan',
                                 '-c',
                                 type=str.lower,
@@ -156,50 +123,19 @@ def log(bot, trigger):
             bot.reply('invalid arguments :(   To learn the command syntax, please use -h')
         return
 
-    if args.mode == 'recent':
-        log_content = read_log_file(bot, args.chan, args.linenumber)
-        log_lines = log_content.split('\n')
-        start_index = 0
-        end_index = len(log_lines)
-        action_index = get_action_line_index(log_lines, args.skip)
-        if action_index is None:
-            relevant_info = dict()
-        else:  # duplicated, but I'm not comfortable because it's used below too
-            relevant_info = get_action_relevant_info(log_lines[action_index])
-            deduce_last_nickname_or_hostmask(log_lines[:action_index], relevant_info)
-            if is_banner_bot(relevant_info['operator']):
-                backtrack_index = max(0, action_index-APPROPRIATE_BACKTRACK_NUMBER)
-                extract_macro_info(log_lines[backtrack_index:action_index], relevant_info)
-    elif args.mode == 'auto':
-        log_content = read_log_file(bot, args.chan, args.maxautolines)
-        log_lines = log_content.split('\n')
-        log_length = len(log_lines)
-
-        action_index = get_action_line_index(log_lines, args.skip)
-        if action_index is None:
-            bot.reply('I did not find any action in the past {} lines :('.format(args.maxautolines))
-            return
-        end_index = min(log_length, action_index+args.followinglines+1)  # +1 to include the index
-
+    log_content = read_log_file(bot, args.chan, args.linenumber)
+    log_lines = log_content.split('\n')
+    start_index = 0
+    end_index = len(log_lines)
+    action_index = get_action_line_index(log_lines, args.skip)
+    if action_index is None:
+        relevant_info = dict()
+    else:  # duplicated, but I'm not comfortable because it's used below too
         relevant_info = get_action_relevant_info(log_lines[action_index])
         deduce_last_nickname_or_hostmask(log_lines[:action_index], relevant_info)
         if is_banner_bot(relevant_info['operator']):
             backtrack_index = max(0, action_index-APPROPRIATE_BACKTRACK_NUMBER)
             extract_macro_info(log_lines[backtrack_index:action_index], relevant_info)
-
-        if 'host' not in relevant_info or 'nick' not in relevant_info:
-            print(relevant_info)
-            bot.reply('For some strange reason I do not have the hostmask yet, stopping search')
-            return
-
-        start_index = get_first_index(log_lines[:action_index], relevant_info)
-        if start_index is None:
-            extra_info = extra_info + '(could not find join of user, log may miss some context) '
-            start_index = 0
-
-        if end_index - start_index > args.maxlogautolines:
-            extra_info += 'only using {} lines, use -b if needed '.format(args.maxlogautolines)
-            start_index = end_index - args.maxlogautolines
 
     prettified_lines = prettify_lines(log_lines[start_index:end_index])
     relevant_content = '\n'.join(prettified_lines)
@@ -410,16 +346,6 @@ def deduce_last_nickname_or_hostmask(log_lines, relevant_info):
             if join_match and join_match.group(1) == relevant_info[known_info]:
                 relevant_info[missing_info] = join_match.group(2).split('@')[1]
                 break
-
-
-def get_first_index(log_lines, relevant_info):
-    '''Returns the first index (join) of the user, otherwise None is returned'''
-    for line_index, line_str in reversed(list(enumerate(log_lines))):
-        join_match = JOIN_REGEX.match(line_str)
-        if join_match and join_match.group(2).split('@')[1] == relevant_info['host']:
-            return line_index
-
-    return None
 
 
 def extract_macro_info(log_lines, relevant_info):
