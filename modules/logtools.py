@@ -59,8 +59,10 @@ def setup(bot):
 
     sheet_fields_with_index = copy(bot.config.logtools.sheet_fields)
     sheet_fields_with_index.append("index")
+
     global LOGENTRY
     LOGENTRY = collections.namedtuple("LOGENTRY", sheet_fields_with_index)
+    LOGENTRY.__new__.__defaults__ = ('',) * len(LOGENTRY._fields)
     global LINE_REPORT_FORMAT
     LINE_REPORT_FORMAT = bot.config.logtools.line_report_format
 
@@ -75,10 +77,12 @@ def search_for_indexes(bot, search_term, extended_search=False):
     for sheet in bot.config.logtools.relevant_sheets:
         index_list = []
         for index, line in enumerate(bot.memory[sheet]):
-            extended_search_match = extended_search and (search_term.lower() in line[7].lower() or search_term.lower() in line[10].lower())
-            if line and (search_term in line[8] or
-                         fuzz.ratio(search_term.lower(), line[1].lower()) >= ACCEPTABLE_RATIO or
-                         extended_search_match):
+            if not line:
+                continue
+            extended_search_match = extended_search and search_term.lower() in line[7].lower()
+            if (search_term in line[8] or
+                fuzz.ratio(search_term.lower(), line[1].lower()) >= ACCEPTABLE_RATIO or
+                extended_search_match):
                 index_list.append(index)
         found_indexes.append(index_list)
 

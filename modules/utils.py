@@ -11,21 +11,6 @@ from pygments.lexers import IrcLogsLexer
 from pygments.formatters import HtmlFormatter
 import boto3
 
-MOD_EMOJIS = defaultdict(lambda __: '\U0001F60E', {'A_D': '\U0001F432',
-                                                   'A_Dragon': '\U0001F432',
-                                                   'carawayseeds': '\U0001F335',
-                                                   'Beyonce': '\U0001F9A1',
-                                                   'entropy': '\U0001F998',
-                                                   'janesays': '\U0001F377',
-                                                   'SolarFlare': '\U0001F411',
-                                                   'LeMapleMoose': '\U0001F98C',
-                                                   'linuxdaemon': '\U0001F43A',
-                                                   'Matthew': '\U0001F48A',
-                                                   'owlet': '\U0001F989',
-                                                   'timekeeper': '\U0001F359',
-                                                   'znuxor': '\U0001F916'})
-
-
 def from_admin_channel_only(func):
     '''Only calls the decorated function if called from an administration channel.'''
     sig = inspect.signature(func)
@@ -37,12 +22,6 @@ def from_admin_channel_only(func):
         if sender in admin_channels:
             func(*args, **kwargs)
     return decorator
-
-
-def get_mod_emoji(mod_nick):
-    '''Returns the best emoji for a given mod nickname.'''
-    return MOD_EMOJIS[mod_nick]
-
 
 def create_s3_paste(s3_bucket_name, paste_content, wanted_title=None):
     '''Creates a paste and returns the link to the formatted version'''
