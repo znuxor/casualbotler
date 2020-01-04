@@ -184,7 +184,8 @@ def search(bot, trigger):
 
     if len(instances) > 3:
         answer = '\U0001F914 ' + create_s3_paste(bot.config.banlogger.s3_bucket_name,
-                                                 '\n'.join(instances))
+                                                 '\n'.join(instances),
+                                                 'found_instances')
         bot.say(answer, max_messages=3)
     elif not instances:
         bot.say('None found.')
