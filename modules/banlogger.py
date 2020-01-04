@@ -74,13 +74,20 @@ def setup(bot):
                                 choices=range(1, 4001),
                                 default=100,
                                 metavar="[1-4000]",
-                                help='the number of lines to log in recent mode')
+                                help='the number of lines to log')
     LOG_CMD_PARSER.add_argument('--chan',
                                 '-c',
                                 type=str.lower,
                                 choices=bot.config.banlogger.loggable_channels,
                                 default='#casualconversation',
                                 help='the channel to log')
+    LOG_CMD_PARSER.add_argument('--skip',
+                                '-s',
+                                type=int,
+                                choices=range(11),
+                                default=0,
+                                metavar="[0-10]",
+                                help='the number of actions to skip for field detection')
 
     global URL_SHORTENER
     URL_SHORTENER = Shortener('Tinyurl', timeout=10)
