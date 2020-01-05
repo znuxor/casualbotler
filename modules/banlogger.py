@@ -79,7 +79,7 @@ def setup(bot):
                                 '-c',
                                 type=str.lower,
                                 choices=bot.config.banlogger.loggable_channels,
-                                default='#casualconversation',
+                                default=bot.config.banlogger.loggable_channels[0],
                                 help='the channel to log')
     LOG_CMD_PARSER.add_argument('--skip',
                                 '-s',
@@ -119,8 +119,7 @@ def log(bot, trigger):
 
     arguments = trigger.groups()[1]
     if arguments is None:
-        bot.reply('No arguments :(   To learn the command syntax, please use -h')
-        return
+        arguments = ''
     try:
         args = LOG_CMD_PARSER.parse_args(shlex.split(arguments))
     except SystemExit:
